@@ -96,6 +96,7 @@
   }
   .mode-toggle button.selected.minus { background: var(--danger); color: #fff; }
   .mode-toggle button.selected.plus { background: var(--accent); color: #fff; }
+  .mode-toggle button.selected.edit { background: var(--label-bg); color: var(--label-fg); }
   .status-row {
     display: flex; justify-content: center; align-items: center; gap: 6px;
     font-size: 11.5px; color: var(--muted);
@@ -157,6 +158,7 @@
     <div class="mode-toggle">
       <button id="modeMinus" data-mode="subtract" class="minus">－ 取消</button>
       <button id="modePlus" data-mode="add" class="selected plus">＋ カウント</button>
+      <button id="modeEdit" data-mode="edit" class="edit">✎ 編集</button>
     </div>
     <div class="status-row">
       <span class="status-dot" id="statusDot"></span>
@@ -300,6 +302,7 @@
   var dateLabel = document.getElementById("dateLabel");
   var modeMinus = document.getElementById("modeMinus");
   var modePlus = document.getElementById("modePlus");
+  var modeEdit = document.getElementById("modeEdit");
   var statusDot = document.getElementById("statusDot");
   var statusText = document.getElementById("statusText");
   var nameOverlay = document.getElementById("nameOverlay");
@@ -377,6 +380,7 @@
   function renderMode() {
     modePlus.classList.toggle("selected", state.mode === "add");
     modeMinus.classList.toggle("selected", state.mode === "subtract");
+    modeEdit.classList.toggle("selected", state.mode === "edit");
   }
 
   function renderStatus() {
@@ -400,11 +404,13 @@
     renderStatus();
   }
 
-  function onTileTap(metricKey) {
-    ensureDayRollover();
-    var nowIso = new Date().toISOString();
-
-    if (state.mode === "add") {
+  /**
+   * 1回分の加算/減算を実際に適用する（スタック操作・イベントキュー追加まで）。
+   * 通常のタップ（1回）にも、編集モードの一括変更（複数回ループ）にも共通で使う。
+   * 呼び出し側で persistCounters/renderCounts/renderStatus/scheduleFlush をまとめて呼ぶこと。
+   */
+  function applyStep(metricKey, stepDelta, nowIso) {
+    if (stepDelta > 0) {
       state.counts[metricKey] = (state.counts[metricKey] || 0) + 1;
       var ctx = { industry: state.industry, occurredAt: nowIso };
       state.stacks[metricKey].push(ctx);
@@ -430,6 +436,56 @@
         delta: -1,
         occurredAt: useOccurredAt
       });
+    }
+  }
+
+  function onTileTap(metricKey) {
+    ensureDayRollover();
+    if (state.mode === "edit") { onTileEdit(metricKey); return; }
+
+    var nowIso = new Date().toISOString();
+    applyStep(metricKey, state.mode === "add" ? 1 : -1, nowIso);
+
+    persistCounters();
+    renderCounts();
+    renderStatus();
+    scheduleFlush();
+  }
+
+  /**
+   * 編集モード：タイルをタップすると現在の件数を元に新しい件数を入力できる。
+   * 差分（増えた分/減った分）を1件ずつの加算・減算として処理するため、
+   * 既存の業種・時間帯の紐づけ（取消時の正しい再帰属）やサーバー側の検証は一切変更不要。
+   */
+  function onTileEdit(metricKey) {
+    var metric = null;
+    for (var i = 0; i < METRICS.length; i++) {
+      if (METRICS[i].key === metricKey) { metric = METRICS[i]; break; }
+    }
+    var label = metric ? metric.label : metricKey;
+    var current = state.counts[metricKey] || 0;
+    var input = window.prompt(label + "の本日の件数を入力してください（現在 " + current + " 件）", String(current));
+    if (input === null) return; // キャンセル
+
+    var trimmed = input.trim();
+    if (!/^\d+$/.test(trimmed)) {
+      window.alert("0以上の整数を入力してください");
+      return;
+    }
+    var next = parseInt(trimmed, 10);
+    if (next > 9999) {
+      window.alert("9999件以下で入力してください");
+      return;
+    }
+
+    var diff = next - current;
+    if (diff === 0) return;
+
+    var nowIso = new Date().toISOString();
+    var steps = Math.abs(diff);
+    var stepDelta = diff > 0 ? 1 : -1;
+    for (var s = 0; s < steps; s++) {
+      applyStep(metricKey, stepDelta, nowIso);
     }
 
     persistCounters();
@@ -504,6 +560,7 @@
 
   modePlus.addEventListener("click", function () { state.mode = "add"; renderMode(); });
   modeMinus.addEventListener("click", function () { state.mode = "subtract"; renderMode(); });
+  modeEdit.addEventListener("click", function () { state.mode = "edit"; renderMode(); });
 
   window.addEventListener("online", function () { renderStatus(); scheduleFlush(); });
   window.addEventListener("offline", renderStatus);
