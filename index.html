@@ -1,0 +1,564 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<title>テレアポKPIカウンター</title>
+<link rel="manifest" href="manifest.json" />
+<link rel="apple-touch-icon" href="icons/icon-192.png" />
+<link rel="icon" href="icons/icon-192.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="KPIカウンター" />
+<meta name="theme-color" content="#e6b055" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="robots" content="noindex, nofollow" />
+<style>
+  :root {
+    --bg: #f4f4f5;
+    --tile-bg: #ffffff;
+    --tile-border: #e2e2e5;
+    --label-bg: #f3cf8f;
+    --label-fg: #3b2f1e;
+    --text: #1c1c1e;
+    --muted: #8a8a8e;
+    --accent: #2f6fed;
+    --danger: #e0533d;
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-top: env(safe-area-inset-top, 0px);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN",
+      "Yu Gothic", Meiryo, system-ui, sans-serif;
+    overscroll-behavior-y: contain;
+    user-select: none;
+  }
+  #app { display: flex; flex-direction: column; height: 100%; max-width: 480px; margin: 0 auto; }
+
+  header {
+    padding: calc(10px + var(--safe-top)) 14px 8px;
+    background: var(--bg);
+    flex-shrink: 0;
+  }
+  .industry-row { display: flex; align-items: center; gap: 8px; }
+  .industry-row label { font-size: 12px; color: var(--muted); white-space: nowrap; }
+  select#industrySelect {
+    flex: 1; font-size: 17px; font-weight: 600; padding: 10px 12px;
+    border-radius: 12px; border: 1px solid var(--tile-border);
+    background: #fff; color: var(--text); appearance: none;
+  }
+  .total-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-top: 8px;
+  }
+  .total-row .label { font-size: 13px; color: var(--muted); }
+  .total-row .value { font-size: 15px; font-weight: 700; color: var(--muted); }
+
+  main {
+    flex: 1; overflow-y: auto; padding: 6px 10px 10px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+  }
+  .tile {
+    background: var(--tile-bg); border: 1px solid var(--tile-border);
+    border-radius: 14px; overflow: hidden; display: flex; flex-direction: column;
+    min-height: 92px; justify-content: space-between;
+    transition: transform 0.06s ease, background 0.1s ease;
+  }
+  .tile.active-sub { box-shadow: inset 0 0 0 2px var(--danger); }
+  .tile:active { transform: scale(0.96); background: #fafafa; }
+  .tile .count {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    font-size: 30px; font-weight: 800; letter-spacing: -0.5px;
+  }
+  .tile .metric-label {
+    background: var(--label-bg); color: var(--label-fg);
+    font-size: 12.5px; font-weight: 600; text-align: center;
+    padding: 6px 4px; line-height: 1.25;
+  }
+
+  footer {
+    flex-shrink: 0; padding: 8px 14px calc(10px + var(--safe-bottom));
+    background: #e9e9ec; border-top: 1px solid var(--tile-border);
+  }
+  .mode-toggle {
+    display: flex; border-radius: 14px; overflow: hidden; border: 1px solid var(--tile-border);
+    background: #fff; margin-bottom: 6px;
+  }
+  .mode-toggle button {
+    flex: 1; border: none; background: transparent; padding: 14px 0;
+    font-size: 20px; font-weight: 700; color: var(--text);
+  }
+  .mode-toggle button.selected.minus { background: var(--danger); color: #fff; }
+  .mode-toggle button.selected.plus { background: var(--accent); color: #fff; }
+  .status-row {
+    display: flex; justify-content: center; align-items: center; gap: 6px;
+    font-size: 11.5px; color: var(--muted);
+  }
+  .status-dot {
+    width: 7px; height: 7px; border-radius: 50%; background: #8bc48b;
+  }
+  .status-dot.pending { background: #e0a23d; }
+  .status-dot.offline { background: var(--danger); }
+
+  .overlay {
+    position: fixed; inset: 0; background: rgba(20,20,22,0.55);
+    display: flex; align-items: center; justify-content: center; padding: 24px; z-index: 50;
+  }
+  .overlay .card {
+    background: #fff; border-radius: 18px; padding: 24px 20px; width: 100%; max-width: 360px;
+  }
+  .overlay h2 { font-size: 17px; margin: 0 0 6px; }
+  .overlay p { font-size: 13px; color: var(--muted); margin: 0 0 16px; line-height: 1.5; }
+  .overlay input {
+    width: 100%; font-size: 17px; padding: 12px 14px; border-radius: 10px;
+    border: 1px solid var(--tile-border); margin-bottom: 12px;
+  }
+  .overlay button.primary {
+    width: 100%; font-size: 16px; font-weight: 700; padding: 13px 0;
+    background: var(--accent); color: #fff; border: none; border-radius: 10px;
+  }
+  .overlay .error { color: var(--danger); font-size: 12.5px; margin: -6px 0 10px; }
+  .hidden { display: none !important; }
+
+  .config-warning {
+    background: #fdece7; color: #a33; font-size: 11.5px; text-align: center;
+    padding: 6px 10px; border-radius: 10px; margin: 0 14px 6px;
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="industry-row">
+      <label for="industrySelect">架電業種</label>
+      <select id="industrySelect"></select>
+    </div>
+    <div class="total-row">
+      <span class="label" id="userLabel">&nbsp;</span>
+      <span class="value" id="dateLabel">&nbsp;</span>
+    </div>
+  </header>
+
+  <div id="configWarning" class="config-warning hidden">
+    Apps ScriptのURLが未設定です。config.js を編集してください（ローカルのカウントは可能です）。
+  </div>
+
+  <main>
+    <div class="grid" id="grid"></div>
+  </main>
+
+  <footer>
+    <div class="mode-toggle">
+      <button id="modeMinus" data-mode="subtract">－ 取消</button>
+      <button id="modePlus" data-mode="add" class="selected plus">＋ カウント</button>
+    </div>
+    <div class="status-row">
+      <span class="status-dot" id="statusDot"></span>
+      <span id="statusText">同期済み</span>
+    </div>
+  </footer>
+</div>
+
+<div class="overlay" id="nameOverlay">
+  <div class="card">
+    <h2 id="registerTitle">はじめに、お名前と共有パスコードを登録してください</h2>
+    <p id="registerDesc">同姓同名を避けるため、フルネームで入力してください。共有パスコードは管理者から伝えられたものを入力してください。どちらもこの端末に保存され、次回以降は入力不要です。</p>
+    <div class="error hidden" id="nameError">お名前を入力してください</div>
+    <input id="nameInput" type="text" placeholder="例：山田 太郎" autocomplete="name" />
+    <div class="error hidden" id="passcodeError">共有パスコードを入力してください</div>
+    <input id="passcodeInput" type="text" placeholder="共有パスコード" autocomplete="off" autocapitalize="characters" />
+    <button class="primary" id="nameSaveBtn">この内容で開始する</button>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  // ---- KPI項目（表示順はアプリ仕様書の指定順と完全一致） ----
+  var METRICS = [
+    { key: "appo", label: "アポ獲得数" },
+    { key: "callEnd", label: "終話数" },
+    { key: "scheduleHearing", label: "日程ヒアリング数" },
+    { key: "closing", label: "クロージング数" },
+    { key: "testClosing", label: "テスクロ数" },
+    { key: "purpose", label: "主旨説明数" },
+    { key: "ownerMeeting", label: "オーナー対面数" },
+    { key: "approach", label: "アプローチ数" },
+    { key: "connect", label: "接続数" },
+    { key: "call", label: "コール数" }
+  ];
+
+  var INDUSTRIES = [
+    "美容", "飲食", "スクール", "フィットネス", "整体・治療院", "リラクゼーション",
+    "宿泊", "建築・現場系", "修理・生活サービス", "自動車", "ペット", "小売", "レジャー", "その他"
+  ];
+
+  var LS = {
+    NAME: "tc_name",
+    PASSCODE: "tc_passcode",
+    INDUSTRY: "tc_industry",
+    DAY: "tc_day",
+    COUNTS: "tc_counts",
+    STACKS: "tc_stacks",
+    QUEUE: "tc_queue"
+  };
+
+  var FLUSH_DEBOUNCE_MS = 400;
+  var FLUSH_RETRY_MS = 6000;
+  var BATCH_SIZE = 40;
+
+  // ---- 日本時間ヘルパー ----
+  var jstDateFmt = new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Tokyo", year: "numeric", month: "2-digit", day: "2-digit" });
+  var jstHourFmt = new Intl.DateTimeFormat("ja-JP", { timeZone: "Asia/Tokyo", hour: "2-digit", hour12: false });
+
+  function jstDateString(d) {
+    // sv-SE ロケールは "yyyy-mm-dd" 形式を返すため採用
+    return jstDateFmt.format(d || new Date());
+  }
+  function jstHour(d) {
+    var s = jstHourFmt.format(d || new Date()).replace(/[^0-9]/g, "");
+    var h = parseInt(s, 10);
+    if (isNaN(h)) h = new Date().getHours();
+    return h % 24;
+  }
+
+  function uuid() {
+    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
+      var r = (Math.random() * 16) | 0, v = c === "x" ? r : (r & 0x3) | 0x8;
+      return v.toString(16);
+    });
+  }
+
+  function loadJSON(key, fallback) {
+    try {
+      var raw = localStorage.getItem(key);
+      if (!raw) return fallback;
+      return JSON.parse(raw);
+    } catch (e) { return fallback; }
+  }
+  function saveJSON(key, value) {
+    try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) {}
+  }
+
+  function zeroCounts() {
+    var o = {};
+    METRICS.forEach(function (m) { o[m.key] = 0; });
+    return o;
+  }
+  function emptyStacks() {
+    var o = {};
+    METRICS.forEach(function (m) { o[m.key] = []; });
+    return o;
+  }
+
+  // ---- 状態 ----
+  var state = {
+    name: localStorage.getItem(LS.NAME) || "",
+    passcode: localStorage.getItem(LS.PASSCODE) || "",
+    industry: localStorage.getItem(LS.INDUSTRY) || INDUSTRIES[0],
+    day: localStorage.getItem(LS.DAY) || jstDateString(),
+    counts: loadJSON(LS.COUNTS, zeroCounts()),
+    stacks: loadJSON(LS.STACKS, emptyStacks()),
+    queue: loadJSON(LS.QUEUE, []),
+    mode: "add"
+  };
+
+  function persistCounters() {
+    localStorage.setItem(LS.DAY, state.day);
+    saveJSON(LS.COUNTS, state.counts);
+    saveJSON(LS.STACKS, state.stacks);
+    saveJSON(LS.QUEUE, state.queue);
+  }
+
+  function ensureDayRollover() {
+    var today = jstDateString();
+    if (today !== state.day) {
+      state.day = today;
+      state.counts = zeroCounts();
+      state.stacks = emptyStacks();
+      persistCounters();
+      renderAll();
+    }
+  }
+
+  // ---- DOM ----
+  var gridEl = document.getElementById("grid");
+  var industrySelect = document.getElementById("industrySelect");
+  var userLabel = document.getElementById("userLabel");
+  var dateLabel = document.getElementById("dateLabel");
+  var modeMinus = document.getElementById("modeMinus");
+  var modePlus = document.getElementById("modePlus");
+  var statusDot = document.getElementById("statusDot");
+  var statusText = document.getElementById("statusText");
+  var nameOverlay = document.getElementById("nameOverlay");
+  var nameInput = document.getElementById("nameInput");
+  var passcodeInput = document.getElementById("passcodeInput");
+  var nameSaveBtn = document.getElementById("nameSaveBtn");
+  var nameError = document.getElementById("nameError");
+  var passcodeError = document.getElementById("passcodeError");
+  var registerTitle = document.getElementById("registerTitle");
+  var registerDesc = document.getElementById("registerDesc");
+  var configWarning = document.getElementById("configWarning");
+
+  function buildIndustryOptions() {
+    industrySelect.innerHTML = "";
+    INDUSTRIES.forEach(function (name) {
+      var opt = document.createElement("option");
+      opt.value = name;
+      opt.textContent = name;
+      industrySelect.appendChild(opt);
+    });
+    industrySelect.value = state.industry;
+  }
+
+  function buildTiles() {
+    gridEl.innerHTML = "";
+    METRICS.forEach(function (m) {
+      var tile = document.createElement("div");
+      tile.className = "tile";
+      tile.dataset.metric = m.key;
+      tile.innerHTML =
+        '<div class="count" id="count-' + m.key + '">0</div>' +
+        '<div class="metric-label">' + m.label + "</div>";
+      tile.addEventListener("click", function () { onTileTap(m.key); });
+      gridEl.appendChild(tile);
+    });
+  }
+
+  function renderCounts() {
+    METRICS.forEach(function (m) {
+      var el = document.getElementById("count-" + m.key);
+      if (el) el.textContent = String(state.counts[m.key] || 0);
+    });
+  }
+
+  function renderHeader() {
+    userLabel.textContent = state.name ? state.name + " さん" : "";
+    dateLabel.textContent = formatDateLabel(state.day);
+  }
+
+  function formatDateLabel(dateStr) {
+    var parts = dateStr.split("-");
+    if (parts.length !== 3) return dateStr;
+    return parts[0] + "/" + parts[1] + "/" + parts[2] + " 本日累計";
+  }
+
+  function renderMode() {
+    modePlus.classList.toggle("selected", state.mode === "add");
+    modeMinus.classList.toggle("selected", state.mode === "subtract");
+  }
+
+  function renderStatus() {
+    var pending = state.queue.length;
+    if (!navigator.onLine) {
+      statusDot.className = "status-dot offline";
+      statusText.textContent = "オフライン（未送信 " + pending + " 件）";
+    } else if (pending > 0) {
+      statusDot.className = "status-dot pending";
+      statusText.textContent = "送信中…（未送信 " + pending + " 件）";
+    } else {
+      statusDot.className = "status-dot";
+      statusText.textContent = "同期済み";
+    }
+  }
+
+  function renderAll() {
+    renderHeader();
+    renderCounts();
+    renderMode();
+    renderStatus();
+  }
+
+  function onTileTap(metricKey) {
+    ensureDayRollover();
+    var nowIso = new Date().toISOString();
+
+    if (state.mode === "add") {
+      state.counts[metricKey] = (state.counts[metricKey] || 0) + 1;
+      var ctx = { industry: state.industry, occurredAt: nowIso };
+      state.stacks[metricKey].push(ctx);
+      enqueueEvent({
+        clientEventId: uuid(),
+        name: state.name,
+        industry: ctx.industry,
+        metricKey: metricKey,
+        delta: 1,
+        occurredAt: ctx.occurredAt
+      });
+    } else {
+      if ((state.counts[metricKey] || 0) <= 0) return; // 0未満にはしない
+      var popped = state.stacks[metricKey].pop();
+      var useIndustry = popped ? popped.industry : state.industry;
+      var useOccurredAt = popped ? popped.occurredAt : nowIso;
+      state.counts[metricKey] = Math.max(0, (state.counts[metricKey] || 0) - 1);
+      enqueueEvent({
+        clientEventId: uuid(),
+        name: state.name,
+        industry: useIndustry,
+        metricKey: metricKey,
+        delta: -1,
+        occurredAt: useOccurredAt
+      });
+    }
+
+    persistCounters();
+    renderCounts();
+    renderStatus();
+    scheduleFlush();
+  }
+
+  function enqueueEvent(ev) {
+    state.queue.push(ev);
+  }
+
+  // ---- サーバー送信 ----
+  var flushTimer = null;
+  var flushing = false;
+
+  function scheduleFlush() {
+    if (flushTimer) clearTimeout(flushTimer);
+    flushTimer = setTimeout(flushQueue, FLUSH_DEBOUNCE_MS);
+  }
+
+  function endpointReady() {
+    return typeof window.APPS_SCRIPT_URL === "string" &&
+      /^https?:\/\//.test(window.APPS_SCRIPT_URL) &&
+      window.APPS_SCRIPT_URL.indexOf("PASTE_YOUR") === -1;
+  }
+
+  function flushQueue() {
+    configWarning.classList.toggle("hidden", endpointReady());
+    if (flushing) return;
+    if (!state.queue.length) { renderStatus(); return; }
+    if (!endpointReady() || !navigator.onLine) {
+      renderStatus();
+      flushTimer = setTimeout(flushQueue, FLUSH_RETRY_MS);
+      return;
+    }
+
+    flushing = true;
+    var batch = state.queue.slice(0, BATCH_SIZE);
+    renderStatus();
+
+    fetch(window.APPS_SCRIPT_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" }, // CORSプリフライト回避のため text/plain を使用
+      body: JSON.stringify({ passcode: state.passcode, events: batch })
+    })
+      .then(function (res) { return res.json(); })
+      .then(function (json) {
+        flushing = false;
+        if (json && json.ok) {
+          var sentIds = {};
+          batch.forEach(function (ev) { sentIds[ev.clientEventId] = true; });
+          state.queue = state.queue.filter(function (ev) { return !sentIds[ev.clientEventId]; });
+          persistCounters();
+          renderStatus();
+          if (state.queue.length) scheduleFlush();
+        } else if (json && json.invalidPasscode) {
+          // パスコードが誤り・未設定：無限リトライせず、再入力を促す（データは消さず保持する）
+          state.passcode = "";
+          localStorage.removeItem(LS.PASSCODE);
+          showRegisterOverlay();
+          renderStatus();
+        } else {
+          flushTimer = setTimeout(flushQueue, FLUSH_RETRY_MS);
+        }
+      })
+      .catch(function () {
+        flushing = false;
+        flushTimer = setTimeout(flushQueue, FLUSH_RETRY_MS);
+      });
+  }
+
+  // ---- イベント ----
+  industrySelect.addEventListener("change", function () {
+    state.industry = industrySelect.value;
+    localStorage.setItem(LS.INDUSTRY, state.industry);
+  });
+
+  modePlus.addEventListener("click", function () { state.mode = "add"; renderMode(); });
+  modeMinus.addEventListener("click", function () { state.mode = "subtract"; renderMode(); });
+
+  window.addEventListener("online", function () { renderStatus(); scheduleFlush(); });
+  window.addEventListener("offline", renderStatus);
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "visible") {
+      ensureDayRollover();
+      scheduleFlush();
+    }
+  });
+  setInterval(function () { ensureDayRollover(); scheduleFlush(); }, 15000);
+
+  function showRegisterOverlay() {
+    var namedAlready = !!state.name;
+    nameInput.value = state.name || "";
+    // 名前が既にある場合は名前欄を隠し、パスコードの再入力だけを求める
+    nameInput.style.display = namedAlready ? "none" : "";
+    nameError.classList.add("hidden");
+    passcodeError.classList.add("hidden");
+    registerTitle.textContent = namedAlready
+      ? "共有パスコードを入力してください"
+      : "はじめに、お名前と共有パスコードを登録してください";
+    registerDesc.textContent = namedAlready
+      ? "パスコードが正しくないか未入力のため、送信が保留されています。管理者から伝えられた共有パスコードを入力してください。"
+      : "同姓同名を避けるため、フルネームで入力してください。共有パスコードは管理者から伝えられたものを入力してください。どちらもこの端末に保存され、次回以降は入力不要です。";
+    nameOverlay.classList.remove("hidden");
+    setTimeout(function () { (namedAlready ? passcodeInput : nameInput).focus(); }, 200);
+  }
+
+  function saveRegistration() {
+    var v = nameInput.style.display === "none" ? state.name : nameInput.value.trim();
+    var p = passcodeInput.value.trim();
+    var ok = true;
+    if (!v) { nameError.classList.remove("hidden"); ok = false; } else { nameError.classList.add("hidden"); }
+    if (!p) { passcodeError.classList.remove("hidden"); ok = false; } else { passcodeError.classList.add("hidden"); }
+    if (!ok) return;
+    state.name = v;
+    state.passcode = p;
+    localStorage.setItem(LS.NAME, v);
+    localStorage.setItem(LS.PASSCODE, p);
+    passcodeInput.value = "";
+    nameOverlay.classList.add("hidden");
+    renderHeader();
+    scheduleFlush();
+  }
+  nameSaveBtn.addEventListener("click", saveRegistration);
+  nameInput.addEventListener("keydown", function (e) { if (e.key === "Enter") passcodeInput.focus(); });
+  passcodeInput.addEventListener("keydown", function (e) { if (e.key === "Enter") saveRegistration(); });
+
+  // ---- 初期化 ----
+  function init() {
+    buildIndustryOptions();
+    buildTiles();
+    ensureDayRollover();
+    renderAll();
+    configWarning.classList.toggle("hidden", endpointReady());
+
+    if (!state.name || !state.passcode) {
+      showRegisterOverlay();
+    } else {
+      nameOverlay.classList.add("hidden");
+    }
+
+    if (state.queue.length) scheduleFlush();
+
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("sw.js").catch(function () {});
+    }
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>
