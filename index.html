@@ -167,12 +167,10 @@
 
 <div class="overlay" id="nameOverlay">
   <div class="card">
-    <h2 id="registerTitle">はじめに、お名前と共有パスコードを登録してください</h2>
-    <p id="registerDesc">同姓同名を避けるため、フルネームで入力してください。共有パスコードは管理者から伝えられたものを入力してください。どちらもこの端末に保存され、次回以降は入力不要です。</p>
+    <h2>はじめに、お名前を登録してください</h2>
+    <p>同姓同名を避けるため、フルネームで入力してください。この端末に保存され、次回以降は入力不要です。</p>
     <div class="error hidden" id="nameError">お名前を入力してください</div>
     <input id="nameInput" type="text" placeholder="例：山田 太郎" autocomplete="name" />
-    <div class="error hidden" id="passcodeError">共有パスコードを入力してください</div>
-    <input id="passcodeInput" type="text" placeholder="共有パスコード" autocomplete="off" autocapitalize="characters" />
     <button class="primary" id="nameSaveBtn">この内容で開始する</button>
   </div>
 </div>
@@ -203,7 +201,6 @@
 
   var LS = {
     NAME: "tc_name",
-    PASSCODE: "tc_passcode",
     INDUSTRY: "tc_industry",
     DAY: "tc_day",
     COUNTS: "tc_counts",
@@ -263,7 +260,6 @@
   // ---- 状態 ----
   var state = {
     name: localStorage.getItem(LS.NAME) || "",
-    passcode: localStorage.getItem(LS.PASSCODE) || "",
     industry: localStorage.getItem(LS.INDUSTRY) || INDUSTRIES[0],
     day: localStorage.getItem(LS.DAY) || jstDateString(),
     counts: loadJSON(LS.COUNTS, zeroCounts()),
@@ -301,12 +297,8 @@
   var statusText = document.getElementById("statusText");
   var nameOverlay = document.getElementById("nameOverlay");
   var nameInput = document.getElementById("nameInput");
-  var passcodeInput = document.getElementById("passcodeInput");
   var nameSaveBtn = document.getElementById("nameSaveBtn");
   var nameError = document.getElementById("nameError");
-  var passcodeError = document.getElementById("passcodeError");
-  var registerTitle = document.getElementById("registerTitle");
-  var registerDesc = document.getElementById("registerDesc");
   var configWarning = document.getElementById("configWarning");
 
   function buildIndustryOptions() {
@@ -452,7 +444,7 @@
     fetch(window.APPS_SCRIPT_URL, {
       method: "POST",
       headers: { "Content-Type": "text/plain;charset=utf-8" }, // CORSプリフライト回避のため text/plain を使用
-      body: JSON.stringify({ passcode: state.passcode, events: batch })
+      body: JSON.stringify({ events: batch })
     })
       .then(function (res) { return res.json(); })
       .then(function (json) {
@@ -464,12 +456,6 @@
           persistCounters();
           renderStatus();
           if (state.queue.length) scheduleFlush();
-        } else if (json && json.invalidPasscode) {
-          // パスコードが誤り・未設定：無限リトライせず、再入力を促す（データは消さず保持する）
-          state.passcode = "";
-          localStorage.removeItem(LS.PASSCODE);
-          showRegisterOverlay();
-          renderStatus();
         } else {
           flushTimer = setTimeout(flushQueue, FLUSH_RETRY_MS);
         }
@@ -499,42 +485,17 @@
   });
   setInterval(function () { ensureDayRollover(); scheduleFlush(); }, 15000);
 
-  function showRegisterOverlay() {
-    var namedAlready = !!state.name;
-    nameInput.value = state.name || "";
-    // 名前が既にある場合は名前欄を隠し、パスコードの再入力だけを求める
-    nameInput.style.display = namedAlready ? "none" : "";
+  function saveName() {
+    var v = nameInput.value.trim();
+    if (!v) { nameError.classList.remove("hidden"); return; }
     nameError.classList.add("hidden");
-    passcodeError.classList.add("hidden");
-    registerTitle.textContent = namedAlready
-      ? "共有パスコードを入力してください"
-      : "はじめに、お名前と共有パスコードを登録してください";
-    registerDesc.textContent = namedAlready
-      ? "パスコードが正しくないか未入力のため、送信が保留されています。管理者から伝えられた共有パスコードを入力してください。"
-      : "同姓同名を避けるため、フルネームで入力してください。共有パスコードは管理者から伝えられたものを入力してください。どちらもこの端末に保存され、次回以降は入力不要です。";
-    nameOverlay.classList.remove("hidden");
-    setTimeout(function () { (namedAlready ? passcodeInput : nameInput).focus(); }, 200);
-  }
-
-  function saveRegistration() {
-    var v = nameInput.style.display === "none" ? state.name : nameInput.value.trim();
-    var p = passcodeInput.value.trim();
-    var ok = true;
-    if (!v) { nameError.classList.remove("hidden"); ok = false; } else { nameError.classList.add("hidden"); }
-    if (!p) { passcodeError.classList.remove("hidden"); ok = false; } else { passcodeError.classList.add("hidden"); }
-    if (!ok) return;
     state.name = v;
-    state.passcode = p;
     localStorage.setItem(LS.NAME, v);
-    localStorage.setItem(LS.PASSCODE, p);
-    passcodeInput.value = "";
     nameOverlay.classList.add("hidden");
     renderHeader();
-    scheduleFlush();
   }
-  nameSaveBtn.addEventListener("click", saveRegistration);
-  nameInput.addEventListener("keydown", function (e) { if (e.key === "Enter") passcodeInput.focus(); });
-  passcodeInput.addEventListener("keydown", function (e) { if (e.key === "Enter") saveRegistration(); });
+  nameSaveBtn.addEventListener("click", saveName);
+  nameInput.addEventListener("keydown", function (e) { if (e.key === "Enter") saveName(); });
 
   // ---- 初期化 ----
   function init() {
@@ -544,8 +505,9 @@
     renderAll();
     configWarning.classList.toggle("hidden", endpointReady());
 
-    if (!state.name || !state.passcode) {
-      showRegisterOverlay();
+    if (!state.name) {
+      nameOverlay.classList.remove("hidden");
+      setTimeout(function () { nameInput.focus(); }, 200);
     } else {
       nameOverlay.classList.add("hidden");
     }
