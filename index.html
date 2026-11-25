@@ -194,7 +194,9 @@
     { key: "call", label: "コール数" }
   ];
 
-  var INDUSTRIES = [
+  // サーバー（スプレッドシートの「設定」シート）から取得できなかった場合のフォールバックのみに使用。
+  // 業種の追加・変更は、通常はスプレッドシートの「設定」シートを編集するだけでよい（コード変更不要）。
+  var DEFAULT_INDUSTRIES = [
     "美容", "飲食", "スクール", "フィットネス", "整体・治療院", "リラクゼーション",
     "宿泊", "建築・現場系", "修理・生活サービス", "自動車", "ペット", "小売", "レジャー", "その他"
   ];
@@ -202,6 +204,7 @@
   var LS = {
     NAME: "tc_name",
     INDUSTRY: "tc_industry",
+    INDUSTRIES_CACHE: "tc_industries_cache",
     DAY: "tc_day",
     COUNTS: "tc_counts",
     STACKS: "tc_stacks",
@@ -257,10 +260,14 @@
     return o;
   }
 
+  // 業種一覧。初回はキャッシュ（前回サーバーから取得した一覧）→無ければ初期セットの順で使う。
+  // アプリ起動時にサーバーへ問い合わせて最新化する（fetchIndustries）。
+  var industries = loadJSON(LS.INDUSTRIES_CACHE, null) || DEFAULT_INDUSTRIES.slice();
+
   // ---- 状態 ----
   var state = {
     name: localStorage.getItem(LS.NAME) || "",
-    industry: localStorage.getItem(LS.INDUSTRY) || INDUSTRIES[0],
+    industry: localStorage.getItem(LS.INDUSTRY) || industries[0],
     day: localStorage.getItem(LS.DAY) || jstDateString(),
     counts: loadJSON(LS.COUNTS, zeroCounts()),
     stacks: loadJSON(LS.STACKS, emptyStacks()),
@@ -303,13 +310,36 @@
 
   function buildIndustryOptions() {
     industrySelect.innerHTML = "";
-    INDUSTRIES.forEach(function (name) {
+    industries.forEach(function (name) {
       var opt = document.createElement("option");
       opt.value = name;
       opt.textContent = name;
       industrySelect.appendChild(opt);
     });
+    if (industries.indexOf(state.industry) === -1) {
+      state.industry = industries[0];
+      localStorage.setItem(LS.INDUSTRY, state.industry);
+    }
     industrySelect.value = state.industry;
+  }
+
+  /**
+   * 業種一覧をサーバー（スプレッドシートの「設定」シート）から取得して最新化する。
+   * 管理者がシートに業種を追加・削除するだけで、この端末にも反映される（コード変更・再デプロイ不要）。
+   * 失敗時・オフライン時は前回キャッシュ（または初期セット）のまま動作する。
+   */
+  function fetchIndustries() {
+    if (!endpointReady()) return;
+    fetch(window.APPS_SCRIPT_URL + "?action=industries", { method: "GET" })
+      .then(function (res) { return res.json(); })
+      .then(function (json) {
+        if (json && json.ok && Array.isArray(json.industries) && json.industries.length) {
+          industries = json.industries;
+          saveJSON(LS.INDUSTRIES_CACHE, industries);
+          buildIndustryOptions();
+        }
+      })
+      .catch(function () {});
   }
 
   function buildTiles() {
@@ -481,6 +511,7 @@
     if (document.visibilityState === "visible") {
       ensureDayRollover();
       scheduleFlush();
+      fetchIndustries();
     }
   });
   setInterval(function () { ensureDayRollover(); scheduleFlush(); }, 15000);
@@ -513,6 +544,7 @@
     }
 
     if (state.queue.length) scheduleFlush();
+    fetchIndustries();
 
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("sw.js").catch(function () {});
