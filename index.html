@@ -25,6 +25,10 @@
     --accent: #2f6fed;
     --danger: #e0533d;
     --footer-bg: #e9e9ec;
+    --radius: 14px;
+    --tile-shadow: none;
+    --font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN",
+      "Yu Gothic", Meiryo, system-ui, sans-serif;
     --safe-bottom: env(safe-area-inset-bottom, 0px);
     --safe-top: env(safe-area-inset-top, 0px);
   }
@@ -32,8 +36,7 @@
   html, body {
     margin: 0; padding: 0; height: 100%;
     background: var(--bg); color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN",
-      "Yu Gothic", Meiryo, system-ui, sans-serif;
+    font-family: var(--font-family);
     overscroll-behavior-y: contain;
     user-select: none;
   }
@@ -48,12 +51,12 @@
   .industry-row label { font-size: 12px; color: var(--muted); white-space: nowrap; }
   select#industrySelect {
     flex: 1; font-size: 17px; font-weight: 600; padding: 10px 12px;
-    border-radius: 12px; border: 1px solid var(--tile-border);
+    border-radius: var(--radius); border: 1px solid var(--tile-border);
     background: var(--tile-bg); color: var(--text); appearance: none;
   }
   .theme-btn {
     flex-shrink: 0; width: 40px; height: 40px; padding: 0; font-size: 18px;
-    border-radius: 12px; border: 1px solid var(--tile-border);
+    border-radius: var(--radius); border: 1px solid var(--tile-border);
     background: var(--tile-bg); display: flex; align-items: center; justify-content: center;
   }
   .theme-btn:active { transform: scale(0.94); }
@@ -73,8 +76,8 @@
   }
   .tile {
     background: var(--tile-bg); border: 1px solid var(--tile-border);
-    border-radius: 14px; overflow: hidden; display: flex; flex-direction: column;
-    min-height: 92px; justify-content: space-between;
+    border-radius: var(--radius); overflow: hidden; display: flex; flex-direction: column;
+    min-height: 92px; justify-content: space-between; box-shadow: var(--tile-shadow);
     transition: transform 0.06s ease, background 0.1s ease;
   }
   .tile.active-sub { box-shadow: inset 0 0 0 2px var(--danger); }
@@ -94,7 +97,7 @@
     background: var(--footer-bg); border-top: 1px solid var(--tile-border);
   }
   .mode-toggle {
-    display: flex; border-radius: 14px; overflow: hidden; border: 1px solid var(--tile-border);
+    display: flex; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--tile-border);
     background: var(--tile-bg); margin-bottom: 6px;
   }
   .mode-toggle button {
@@ -119,7 +122,7 @@
     display: flex; align-items: center; justify-content: center; padding: 24px; z-index: 50;
   }
   .overlay .card {
-    background: var(--tile-bg); border-radius: 18px; padding: 24px 20px; width: 100%; max-width: 360px;
+    background: var(--tile-bg); border-radius: var(--radius); padding: 24px 20px; width: 100%; max-width: 360px;
   }
   .overlay h2 { font-size: 17px; margin: 0 0 6px; }
   .overlay p { font-size: 13px; color: var(--muted); margin: 0 0 16px; line-height: 1.5; }
@@ -140,17 +143,72 @@
   }
 
   /* ---- テーマ選択 ---- */
-  .theme-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+  .theme-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; max-height: 50vh; overflow-y: auto; }
   .theme-option {
     display: flex; align-items: center; gap: 10px; padding: 10px 12px;
     border-radius: 12px; border: 2px solid var(--tile-border); background: var(--tile-bg);
-    font-size: 14px; font-weight: 600; color: var(--text); text-align: left; width: 100%;
+    font-size: 14px; font-weight: 700; color: var(--text); text-align: left; width: 100%;
   }
   .theme-option.selected { border-color: var(--accent); }
   .theme-swatch {
-    width: 26px; height: 26px; border-radius: 8px; flex-shrink: 0;
-    border: 1px solid rgba(0,0,0,0.12);
+    width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0;
+    border: 1px solid rgba(0,0,0,0.15); position: relative; overflow: hidden;
+    display: flex; align-items: flex-end; justify-content: flex-end; padding: 3px;
   }
+  .theme-swatch-dot { width: 9px; height: 9px; border-radius: 50%; display: block; border: 1px solid rgba(0,0,0,0.15); }
+
+  /* ---- レア演出（コール数タップ時、低確率）---- */
+  .rare-frame {
+    position: fixed; inset: 0; pointer-events: none; z-index: 150; opacity: 0;
+    transition: opacity 0.15s ease;
+  }
+  .rare-frame.show { opacity: 1; }
+  .rare-frame.blue { box-shadow: inset 0 0 0 5px rgba(70,140,255,0.5), inset 0 0 70px rgba(70,140,255,0.3); animation: rare-pulse-blue 2s ease-in-out; }
+  .rare-frame.red { box-shadow: inset 0 0 0 6px rgba(255,60,60,0.55), inset 0 0 90px rgba(255,40,40,0.35); animation: rare-pulse-red 2s ease-in-out; }
+  .rare-frame.gold { box-shadow: inset 0 0 0 7px rgba(255,200,60,0.65), inset 0 0 110px rgba(255,190,50,0.4); animation: rare-pulse-gold 2s ease-in-out; }
+  .rare-frame.rainbow {
+    box-shadow: inset 0 0 0 8px rgba(255,255,255,0.35), inset 0 0 130px rgba(255,255,255,0.2);
+    background: conic-gradient(from 0deg, #ff5b5b, #ffd45b, #7bff5b, #5bdcff, #9d6bff, #ff5bd6, #ff5b5b);
+    mix-blend-mode: overlay; animation: rare-pulse-rainbow 2s linear;
+  }
+  @keyframes rare-pulse-blue {
+    0%, 100% { box-shadow: inset 0 0 0 3px rgba(70,140,255,0.3), inset 0 0 40px rgba(70,140,255,0.18); }
+    50% { box-shadow: inset 0 0 0 7px rgba(70,140,255,0.65), inset 0 0 90px rgba(70,140,255,0.4); }
+  }
+  @keyframes rare-pulse-red {
+    0%, 100% { box-shadow: inset 0 0 0 4px rgba(255,60,60,0.35), inset 0 0 50px rgba(255,40,40,0.22); }
+    50% { box-shadow: inset 0 0 0 9px rgba(255,60,60,0.7), inset 0 0 110px rgba(255,40,40,0.45); }
+  }
+  @keyframes rare-pulse-gold {
+    0%, 100% { box-shadow: inset 0 0 0 5px rgba(255,200,60,0.4), inset 0 0 60px rgba(255,190,50,0.25); }
+    50% { box-shadow: inset 0 0 0 10px rgba(255,200,60,0.8), inset 0 0 140px rgba(255,190,50,0.5); }
+  }
+  @keyframes rare-pulse-rainbow {
+    0% { filter: hue-rotate(0deg); }
+    100% { filter: hue-rotate(360deg); }
+  }
+
+  .rare-toast {
+    position: fixed; left: 50%; top: 32%; transform: translate(-50%, -50%) scale(0.85);
+    z-index: 151; pointer-events: none; text-align: center; white-space: nowrap;
+    padding: 14px 24px; border-radius: 16px; font-weight: 800;
+    opacity: 0; transition: opacity 0.15s ease, transform 0.15s ease;
+  }
+  .rare-toast.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  .rare-toast.blue { background: #eaf2ff; color: #1557c0; font-size: 18px; box-shadow: 0 8px 24px rgba(40,100,255,0.35); }
+  .rare-toast.red { background: #fff0ee; color: #c3281c; font-size: 20px; box-shadow: 0 8px 28px rgba(255,40,40,0.4); }
+  .rare-toast.gold {
+    background: linear-gradient(135deg, #fff7df, #ffe6a6); color: #7a5a12; font-size: 21px;
+    box-shadow: 0 10px 34px rgba(255,190,50,0.5); border: 1px solid #e9c466;
+  }
+  .rare-toast.rainbow {
+    background: #111; font-size: 23px; letter-spacing: 0.5px;
+    box-shadow: 0 0 0 3px #fff, 0 10px 40px rgba(0,0,0,0.5);
+    background-image: linear-gradient(90deg, #ff5b5b, #ffd45b, #7bff5b, #5bdcff, #9d6bff, #ff5bd6, #ff5b5b);
+    background-size: 300% 100%; -webkit-background-clip: text; background-clip: text; color: transparent;
+    animation: rare-rainbow-text 1.6s linear infinite;
+  }
+  @keyframes rare-rainbow-text { to { background-position: 300% 0; } }
 
   /* ---- アポ獲得の祝賀演出 ---- */
   .confetti-piece {
@@ -237,6 +295,9 @@
   </div>
 </div>
 
+<div class="rare-frame" id="rareFrame"></div>
+<div class="rare-toast" id="rareToast"></div>
+
 <script src="config.js"></script>
 <script>
 (function () {
@@ -275,18 +336,23 @@
     OMIKUJI_DAY: "tc_omikuji_day"
   };
 
-  // ---- デザイン（テーマ）一覧。色はCSSカスタムプロパティとして適用する。 ----
+  // ---- デザイン（テーマ）一覧。色・角丸・フォントをCSSカスタムプロパティとして適用する。 ----
+  var BASE_FONT = '-apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, system-ui, sans-serif';
+  var MONO_FONT = "'Courier New', Courier, monospace";
+  var HACKER_FONT = "'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace";
   var THEMES = [
-    { id: "default", name: "デフォルト", swatch: "#f3cf8f",
-      vars: { "--bg": "#f4f4f5", "--tile-bg": "#ffffff", "--tile-border": "#e2e2e5", "--label-bg": "#f3cf8f", "--label-fg": "#3b2f1e", "--text": "#1c1c1e", "--muted": "#8a8a8e", "--accent": "#2f6fed", "--danger": "#e0533d", "--footer-bg": "#e9e9ec" } },
-    { id: "dark", name: "ダーク", swatch: "#4a4458",
-      vars: { "--bg": "#1c1c20", "--tile-bg": "#2a2a30", "--tile-border": "#3a3a42", "--label-bg": "#4a4458", "--label-fg": "#f0e8ff", "--text": "#f2f2f5", "--muted": "#9999a3", "--accent": "#6c8cff", "--danger": "#ff6b5e", "--footer-bg": "#242428" } },
-    { id: "pop", name: "ポップ", swatch: "#ff9ecf",
-      vars: { "--bg": "#fff4fb", "--tile-bg": "#ffffff", "--tile-border": "#ffd3ec", "--label-bg": "#ff9ecf", "--label-fg": "#5a1140", "--text": "#3a1030", "--muted": "#a872a0", "--accent": "#7b5bff", "--danger": "#ff4d6d", "--footer-bg": "#ffe3f3" } },
-    { id: "sumi", name: "シック", swatch: "#4a4a52",
-      vars: { "--bg": "#eceef0", "--tile-bg": "#ffffff", "--tile-border": "#d8dadd", "--label-bg": "#4a4a52", "--label-fg": "#ffffff", "--text": "#23252a", "--muted": "#767a82", "--accent": "#2f3b52", "--danger": "#b23a3a", "--footer-bg": "#dde0e3" } },
-    { id: "pastel", name: "パステル", swatch: "#bfe3d0",
-      vars: { "--bg": "#f6fbf8", "--tile-bg": "#ffffff", "--tile-border": "#dcefe3", "--label-bg": "#bfe3d0", "--label-fg": "#1f4a34", "--text": "#2b332f", "--muted": "#8ba297", "--accent": "#5ea8c9", "--danger": "#e38a8a", "--footer-bg": "#e4f3ea" } }
+    { id: "standard", name: "STANDARD",
+      vars: { "--bg": "#f4f4f5", "--tile-bg": "#ffffff", "--tile-border": "#e2e2e5", "--label-bg": "#f3cf8f", "--label-fg": "#3b2f1e", "--text": "#1c1c1e", "--muted": "#8a8a8e", "--accent": "#2f6fed", "--danger": "#e0533d", "--footer-bg": "#e9e9ec", "--radius": "14px", "--font-family": BASE_FONT, "--tile-shadow": "none" } },
+    { id: "blackgold", name: "BLACK GOLD",
+      vars: { "--bg": "#0d0b08", "--tile-bg": "#1a1611", "--tile-border": "#3a2f1a", "--label-bg": "linear-gradient(135deg,#caa14b,#8a6d2f)", "--label-fg": "#1a1310", "--text": "#f3e6c8", "--muted": "#9c8a63", "--accent": "#d4af37", "--danger": "#c0392b", "--footer-bg": "#120f0a", "--radius": "14px", "--font-family": BASE_FONT, "--tile-shadow": "0 0 0 1px #3a2f1a, 0 4px 14px rgba(212,175,55,0.18)" } },
+    { id: "cyberneon", name: "CYBER NEON",
+      vars: { "--bg": "#120a24", "--tile-bg": "#1c1033", "--tile-border": "#3a2466", "--label-bg": "linear-gradient(135deg,#2a1854,#3d2a7a)", "--label-fg": "#9fdcff", "--text": "#e7e3ff", "--muted": "#9d8fc9", "--accent": "#00e5ff", "--danger": "#ff3d7f", "--footer-bg": "#0d0720", "--radius": "16px", "--font-family": BASE_FONT, "--tile-shadow": "0 0 10px rgba(0,229,255,0.25), inset 0 0 0 1px #3a2466" } },
+    { id: "retrogame", name: "RETRO GAME",
+      vars: { "--bg": "#101010", "--tile-bg": "#1d1d1d", "--tile-border": "#f5c400", "--label-bg": "#f5c400", "--label-fg": "#101010", "--text": "#f5f5f5", "--muted": "#9a9a9a", "--accent": "#2ecbff", "--danger": "#ff2e4d", "--footer-bg": "#0a0a0a", "--radius": "2px", "--font-family": MONO_FONT, "--tile-shadow": "inset 0 0 0 2px #000" } },
+    { id: "y2kpink", name: "Y2K PINK",
+      vars: { "--bg": "linear-gradient(135deg,#ffe6f4,#f1e6ff)", "--tile-bg": "#ffffff", "--tile-border": "#ffc9e8", "--label-bg": "linear-gradient(135deg,#ffb3dd,#d9b3ff)", "--label-fg": "#5a2a52", "--text": "#4a2d49", "--muted": "#b48bb0", "--accent": "#ff6fb5", "--danger": "#ff4f81", "--footer-bg": "#ffeaf6", "--radius": "20px", "--font-family": BASE_FONT, "--tile-shadow": "0 4px 14px rgba(255,111,181,0.18)" } },
+    { id: "hacker", name: "HACKER",
+      vars: { "--bg": "#000000", "--tile-bg": "#060a06", "--tile-border": "#1f3d1f", "--label-bg": "#0a1a0a", "--label-fg": "#39ff6a", "--text": "#39ff6a", "--muted": "#1f7a3a", "--accent": "#39ff6a", "--danger": "#ff3b3b", "--footer-bg": "#000000", "--radius": "4px", "--font-family": HACKER_FONT, "--tile-shadow": "0 0 6px rgba(57,255,106,0.25), inset 0 0 0 1px #1f3d1f" } }
   ];
 
   // ---- おみくじ（1日1回・起動時に表示） ----
@@ -362,7 +428,7 @@
     stacks: loadJSON(LS.STACKS, emptyStacks()),
     queue: loadJSON(LS.QUEUE, []),
     mode: "add",
-    theme: localStorage.getItem(LS.THEME) || "default"
+    theme: localStorage.getItem(LS.THEME) || "standard"
   };
 
   function persistCounters() {
@@ -406,6 +472,8 @@
   var omikujiRank = document.getElementById("omikujiRank");
   var omikujiMessage = document.getElementById("omikujiMessage");
   var omikujiCloseBtn = document.getElementById("omikujiCloseBtn");
+  var rareFrame = document.getElementById("rareFrame");
+  var rareToast = document.getElementById("rareToast");
 
   function buildIndustryOptions() {
     industrySelect.innerHTML = "";
@@ -543,6 +611,7 @@
     var wasAdd = state.mode === "add";
     applyStep(metricKey, wasAdd ? 1 : -1, nowIso);
     if (wasAdd && metricKey === "appo") celebrateAppo();
+    if (wasAdd && metricKey === "call") rollRareEffect();
 
     persistCounters();
     renderCounts();
@@ -616,7 +685,11 @@
       var btn = document.createElement("button");
       btn.type = "button";
       btn.className = "theme-option" + (state.theme === t.id ? " selected" : "");
-      btn.innerHTML = '<span class="theme-swatch" style="background:' + t.swatch + '"></span><span>' + t.name + "</span>";
+      btn.innerHTML =
+        '<span class="theme-swatch" style="background:' + t.vars["--bg"] + '">' +
+          '<span class="theme-swatch-dot" style="background:' + t.vars["--accent"] + '"></span>' +
+        '</span>' +
+        '<span style="font-family:' + t.vars["--font-family"] + '">' + t.name + "</span>";
       btn.addEventListener("click", function () {
         applyTheme(t.id);
         buildThemeList();
@@ -648,6 +721,41 @@
       toast.classList.remove("show");
       setTimeout(function () { toast.remove(); }, 200);
     }, 1200);
+  }
+
+  // ---- コール数タップ時のレア演出（低確率。他の処理には一切影響しない） ----
+  // 1回の抽選（0〜1の乱数）を、レアな順に区間へ振り分けることで、各演出の発生確率を
+  // 正確に独立させつつ、同時発生が起きないようにしている。
+  var RARE_TIERS = [
+    { id: "rainbow", p: 1 / 10000, message: "PREMIUM!! 本日、無双の予感。" },
+    { id: "gold", p: 1 / 2000, message: "前確の神、降臨。" },
+    { id: "red", p: 1 / 777, message: "激アツ！アポ獲得の予感！" },
+    { id: "blue", p: 1 / 400, message: "アポの気配…" }
+  ];
+  var rareTimer = null;
+  function rollRareEffect() {
+    var r = Math.random();
+    var cum = 0;
+    for (var i = 0; i < RARE_TIERS.length; i++) {
+      cum += RARE_TIERS[i].p;
+      if (r < cum) { showRareEffect(RARE_TIERS[i]); return; }
+    }
+  }
+  function showRareEffect(tier) {
+    if (rareTimer) {
+      clearTimeout(rareTimer);
+      rareFrame.className = "rare-frame";
+      rareToast.className = "rare-toast";
+      void rareFrame.offsetWidth; // 強制リフローで前回のアニメーションをリセット
+    }
+    rareToast.textContent = tier.message;
+    rareFrame.className = "rare-frame " + tier.id + " show";
+    rareToast.className = "rare-toast " + tier.id + " show";
+    rareTimer = setTimeout(function () {
+      rareFrame.className = "rare-frame";
+      rareToast.className = "rare-toast";
+      rareTimer = null;
+    }, 2000);
   }
 
   // ---- おみくじ（1日1回、アプリを開いたときに表示） ----
