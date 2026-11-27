@@ -124,22 +124,24 @@
   }
   .levelup-frame.show {
     opacity: 1;
-    box-shadow: inset 0 0 0 7px var(--catglow, rgba(255,255,255,0.4)), inset 0 0 120px var(--catglow, rgba(255,255,255,0.25));
-    animation: levelup-pulse 2.5s ease-in-out;
+    box-shadow: inset 0 0 0 9px var(--catglow, rgba(255,255,255,0.4)), inset 0 0 150px var(--catglow, rgba(255,255,255,0.3));
+    animation: levelup-pulse 3s ease-in-out;
   }
   @keyframes levelup-pulse {
     0%, 100% { filter: brightness(1); }
-    50% { filter: brightness(1.3); }
+    20% { filter: brightness(1.5); }
+    50% { filter: brightness(1.15); }
+    70% { filter: brightness(1.4); }
   }
   .levelup-toast {
-    position: fixed; left: 50%; top: 30%; transform: translate(-50%, -50%) scale(0.85);
+    position: fixed; left: 50%; top: 30%; transform: translate(-50%, -50%) scale(0.35) rotate(-8deg);
     z-index: 151; pointer-events: none; text-align: center;
     padding: 18px 28px; border-radius: 18px; font-weight: 800;
-    opacity: 0; transition: opacity 0.2s ease, transform 0.2s ease;
+    opacity: 0; transition: opacity 0.25s ease, transform 0.55s cubic-bezier(.34,1.56,.64,1);
     background: var(--catbg, #222); color: var(--cattext, #fff);
     box-shadow: 0 12px 36px var(--catglow, rgba(0,0,0,0.4)), 0 0 0 2px rgba(255,255,255,0.25);
   }
-  .levelup-toast.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  .levelup-toast.show { opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(0deg); }
   .levelup-toast .lu-label { display: block; font-size: 12px; font-weight: 700; opacity: 0.85; margin-bottom: 2px; letter-spacing: 1px; }
   .levelup-toast .lu-level { display: block; font-size: 11px; font-weight: 700; opacity: 0.75; margin-bottom: 4px; }
   .levelup-toast .lu-name { display: block; font-size: 22px; }
@@ -246,13 +248,13 @@
     transition: opacity 0.15s ease;
   }
   .rare-frame.show { opacity: 1; }
-  .rare-frame.blue { box-shadow: inset 0 0 0 5px rgba(70,140,255,0.5), inset 0 0 70px rgba(70,140,255,0.3); animation: rare-pulse-blue 2s ease-in-out; }
-  .rare-frame.red { box-shadow: inset 0 0 0 6px rgba(255,60,60,0.55), inset 0 0 90px rgba(255,40,40,0.35); animation: rare-pulse-red 2s ease-in-out; }
-  .rare-frame.gold { box-shadow: inset 0 0 0 7px rgba(255,200,60,0.65), inset 0 0 110px rgba(255,190,50,0.4); animation: rare-pulse-gold 2s ease-in-out; }
+  .rare-frame.blue { box-shadow: inset 0 0 0 6px rgba(70,140,255,0.55), inset 0 0 90px rgba(70,140,255,0.35); animation: rare-pulse-blue 2.3s ease-in-out; }
+  .rare-frame.red { box-shadow: inset 0 0 0 7px rgba(255,60,60,0.6), inset 0 0 110px rgba(255,40,40,0.4); animation: rare-pulse-red 2.3s ease-in-out; }
+  .rare-frame.gold { box-shadow: inset 0 0 0 8px rgba(255,200,60,0.7), inset 0 0 130px rgba(255,190,50,0.45); animation: rare-pulse-gold 2.3s ease-in-out; }
   .rare-frame.rainbow {
-    box-shadow: inset 0 0 0 8px rgba(255,255,255,0.35), inset 0 0 130px rgba(255,255,255,0.2);
+    box-shadow: inset 0 0 0 9px rgba(255,255,255,0.4), inset 0 0 150px rgba(255,255,255,0.25);
     background: conic-gradient(from 0deg, #ff5b5b, #ffd45b, #7bff5b, #5bdcff, #9d6bff, #ff5bd6, #ff5b5b);
-    mix-blend-mode: overlay; animation: rare-pulse-rainbow 2s linear;
+    mix-blend-mode: overlay; animation: rare-pulse-rainbow 2.3s linear;
   }
   @keyframes rare-pulse-blue {
     0%, 100% { box-shadow: inset 0 0 0 3px rgba(70,140,255,0.3), inset 0 0 40px rgba(70,140,255,0.18); }
@@ -272,12 +274,12 @@
   }
 
   .rare-toast {
-    position: fixed; left: 50%; top: 32%; transform: translate(-50%, -50%) scale(0.85);
+    position: fixed; left: 50%; top: 32%; transform: translate(-50%, -50%) scale(0.4) rotate(-6deg);
     z-index: 151; pointer-events: none; text-align: center; white-space: nowrap;
     padding: 14px 24px; border-radius: 16px; font-weight: 800;
-    opacity: 0; transition: opacity 0.15s ease, transform 0.15s ease;
+    opacity: 0; transition: opacity 0.2s ease, transform 0.45s cubic-bezier(.34,1.56,.64,1);
   }
-  .rare-toast.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  .rare-toast.show { opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(0deg); }
   .rare-toast.blue { background: #eaf2ff; color: #1557c0; font-size: 18px; box-shadow: 0 8px 24px rgba(40,100,255,0.35); }
   .rare-toast.red { background: #fff0ee; color: #c3281c; font-size: 20px; box-shadow: 0 8px 28px rgba(255,40,40,0.4); }
   .rare-toast.gold {
@@ -293,6 +295,26 @@
   }
   @keyframes rare-rainbow-text { to { background-position: 300% 0; } }
 
+  /* ---- 演出共通パーツ（衝撃波リング・飛散パーティクル）----
+     transform/opacityのみで動かす軽量な構成。レア演出・レベルアップ演出の両方から使い回す。 */
+  .fx-ring {
+    position: fixed; left: 50%; top: 30%; width: 160px; height: 160px; margin: -80px 0 0 -80px;
+    border-radius: 50%; border-width: 4px; border-style: solid;
+    pointer-events: none; z-index: 149; opacity: 0.9;
+    animation: fx-ring-expand 0.85s cubic-bezier(.15,.7,.3,1) forwards;
+  }
+  @keyframes fx-ring-expand {
+    to { transform: scale(2.4); opacity: 0; }
+  }
+  .fx-spark {
+    position: fixed; left: 50%; top: 30%; pointer-events: none; z-index: 152;
+    opacity: 1; will-change: transform, opacity;
+    animation: fx-spark-burst 0.95s cubic-bezier(.2,.65,.3,1) forwards;
+  }
+  @keyframes fx-spark-burst {
+    to { transform: translate(var(--fx-dx), var(--fx-dy)) scale(0.3) rotate(var(--fx-rot)); opacity: 0; }
+  }
+
   /* ---- アポ獲得の祝賀演出 ---- */
   .confetti-piece {
     position: fixed; top: -24px; pointer-events: none; z-index: 200;
@@ -303,16 +325,30 @@
     100% { transform: translateY(110vh) rotate(380deg); opacity: 0; }
   }
   .celebrate-toast {
-    position: fixed; left: 50%; top: 38%; transform: translate(-50%, -50%) scale(0.8);
-    background: var(--tile-bg); color: var(--text); padding: 14px 22px; border-radius: 16px;
-    font-size: 18px; font-weight: 800; box-shadow: 0 8px 24px rgba(0,0,0,0.22);
-    z-index: 201; opacity: 0; transition: opacity 0.15s ease, transform 0.15s ease;
+    position: fixed; left: 50%; top: 38%; transform: translate(-50%, -50%) scale(0.3) rotate(-6deg);
+    background: linear-gradient(135deg, #fff3c4, #ffcd46, #caa14b); color: #5a3d02;
+    padding: 16px 26px; border-radius: 18px;
+    font-size: 19px; font-weight: 800; box-shadow: 0 10px 34px rgba(255,190,50,0.45), 0 0 0 2px rgba(255,255,255,0.4);
+    z-index: 201; opacity: 0; transition: opacity 0.2s ease, transform 0.5s cubic-bezier(.34,1.56,.64,1);
     pointer-events: none; text-align: center; white-space: nowrap;
   }
-  .celebrate-toast.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  .celebrate-toast.show { opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(0deg); }
 
   /* ---- おみくじ ---- */
-  .omikuji-rank { font-size: 32px; font-weight: 800; text-align: center; margin: 0 0 10px; }
+  .omikuji-rank {
+    font-size: 34px; font-weight: 800; text-align: center; margin: 0 0 12px;
+    display: block; animation: omikuji-pop 0.55s cubic-bezier(.34,1.56,.64,1);
+  }
+  .omikuji-rank.cat-gray, .omikuji-rank.cat-silver, .omikuji-rank.cat-blue,
+  .omikuji-rank.cat-purple, .omikuji-rank.cat-gold {
+    background: var(--catbg); color: var(--cattext); border-radius: 16px; padding: 10px 0;
+    box-shadow: 0 10px 28px var(--catglow, rgba(0,0,0,0.25));
+  }
+  @keyframes omikuji-pop {
+    0% { transform: scale(0.3) rotate(-12deg); opacity: 0; }
+    60% { transform: scale(1.12) rotate(4deg); opacity: 1; }
+    100% { transform: scale(1) rotate(0deg); opacity: 1; }
+  }
   .omikuji-message { text-align: center; }
 </style>
 </head>
@@ -854,6 +890,51 @@
     });
   }
 
+  // ---- 演出の豪華さ（衝撃波リング・飛散パーティクル）をカテゴリごとに定義 ----
+  // transform/opacityのみで動くDOM要素を一瞬だけ生成し、終了後は確実に除去する（常駐コストゼロ）。
+  var FX_CATEGORY_STYLE = {
+    gray:    { color: "#aaadb3", emojis: ["✨", "⭐"], count: 10 },
+    bronze:  { color: "#c9893f", emojis: ["✨", "⭐"], count: 12 },
+    silver:  { color: "#c7ccd4", emojis: ["✨", "⭐", "💠"], count: 13 },
+    blue:    { color: "#2f9bff", emojis: ["✨", "💠", "⭐"], count: 14 },
+    purple:  { color: "#8a4dff", emojis: ["✨", "💠", "⭐"], count: 15 },
+    red:     { color: "#ff4433", emojis: ["🔥", "✨", "⭐"], count: 16 },
+    gold:    { color: "#ffc83c", emojis: ["⭐", "✨", "👑"], count: 18 },
+    aurora:  { color: "#8affc1", emojis: ["✨", "💫", "🌟"], count: 20 },
+    rainbow: { color: "#ffffff", emojis: ["🎉", "✨", "🌟", "👑", "💎"], count: 24 }
+  };
+
+  function spawnRing(color) {
+    var ring = document.createElement("div");
+    ring.className = "fx-ring";
+    ring.style.borderColor = color;
+    document.body.appendChild(ring);
+    setTimeout(function () { ring.remove(); }, 900);
+  }
+
+  function spawnBurst(emojis, count) {
+    for (var i = 0; i < count; i++) {
+      var piece = document.createElement("span");
+      piece.className = "fx-spark";
+      piece.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+      var angle = Math.random() * Math.PI * 2;
+      var dist = 70 + Math.random() * 90;
+      piece.style.setProperty("--fx-dx", (Math.cos(angle) * dist).toFixed(1) + "px");
+      piece.style.setProperty("--fx-dy", (Math.sin(angle) * dist).toFixed(1) + "px");
+      piece.style.setProperty("--fx-rot", Math.round(Math.random() * 360 - 180) + "deg");
+      piece.style.fontSize = Math.round(16 + Math.random() * 14) + "px";
+      piece.style.animationDelay = (Math.random() * 0.1).toFixed(2) + "s";
+      document.body.appendChild(piece);
+      (function (el) { setTimeout(function () { el.remove(); }, 1150); })(piece);
+    }
+  }
+
+  function playGrandEffect(category) {
+    var style = FX_CATEGORY_STYLE[category] || FX_CATEGORY_STYLE.gray;
+    spawnRing(style.color);
+    spawnBurst(style.emojis, style.count);
+  }
+
   var levelupTimer = null;
   function triggerLevelUp(tier) {
     if (levelupTimer) {
@@ -866,11 +947,12 @@
     levelupName.textContent = tier.name;
     levelupFrame.className = "levelup-frame cat-" + tier.category + " show";
     levelupToast.className = "levelup-toast cat-" + tier.category + " show";
+    playGrandEffect(tier.category);
     levelupTimer = setTimeout(function () {
       levelupFrame.className = "levelup-frame";
       levelupToast.className = "levelup-toast";
       levelupTimer = null;
-    }, 2500);
+    }, 3000);
   }
 
   /**
@@ -993,19 +1075,20 @@
   }
 
   // ---- アポ獲得時の祝賀演出 ----
-  var CONFETTI_EMOJI = ["🎉", "✨", "🎊", "⭐", "🥳"];
+  var CONFETTI_EMOJI = ["🎉", "✨", "🎊", "⭐", "🥳", "👏", "🏆"];
   var CELEBRATE_MESSAGES = ["🎉 アポ獲得！", "やった、ナイスアポ！", "お見事！🎉", "この調子！"];
   function celebrateAppo() {
-    for (var i = 0; i < 14; i++) {
+    for (var i = 0; i < 20; i++) {
       var piece = document.createElement("div");
       piece.className = "confetti-piece";
       piece.textContent = CONFETTI_EMOJI[Math.floor(Math.random() * CONFETTI_EMOJI.length)];
       piece.style.left = (Math.random() * 100) + "vw";
-      piece.style.fontSize = (16 + Math.random() * 14) + "px";
+      piece.style.fontSize = (16 + Math.random() * 16) + "px";
       piece.style.animationDelay = (Math.random() * 0.25) + "s";
       document.body.appendChild(piece);
       (function (el) { setTimeout(function () { el.remove(); }, 1500); })(piece);
     }
+    spawnRing("#ffc83c");
     var toast = document.createElement("div");
     toast.className = "celebrate-toast";
     toast.textContent = CELEBRATE_MESSAGES[Math.floor(Math.random() * CELEBRATE_MESSAGES.length)];
@@ -1014,7 +1097,7 @@
     setTimeout(function () {
       toast.classList.remove("show");
       setTimeout(function () { toast.remove(); }, 200);
-    }, 1200);
+    }, 1400);
   }
 
   // ---- コール数タップ時のレア演出（低確率。他の処理には一切影響しない） ----
@@ -1045,22 +1128,27 @@
     rareToast.textContent = tier.message;
     rareFrame.className = "rare-frame " + tier.id + " show";
     rareToast.className = "rare-toast " + tier.id + " show";
+    playGrandEffect(tier.id);
     rareTimer = setTimeout(function () {
       rareFrame.className = "rare-frame";
       rareToast.className = "rare-toast";
       rareTimer = null;
-    }, 2000);
+    }, 2300);
   }
 
   // ---- おみくじ（1日1回、アプリを開いたときに表示） ----
+  var OMIKUJI_RANK_CATEGORY = { "大吉": "gold", "中吉": "purple", "吉": "blue", "小吉": "silver", "末吉": "gray" };
   function maybeShowOmikuji() {
     var today = jstDateString();
     if (localStorage.getItem(LS.OMIKUJI_DAY) === today) return;
     var pick = OMIKUJI[Math.floor(Math.random() * OMIKUJI.length)];
+    var category = OMIKUJI_RANK_CATEGORY[pick.rank] || "gray";
     omikujiRank.textContent = pick.rank;
+    omikujiRank.className = "omikuji-rank cat-" + category;
     omikujiMessage.textContent = pick.message;
     omikujiOverlay.classList.remove("hidden");
     localStorage.setItem(LS.OMIKUJI_DAY, today);
+    playGrandEffect(category);
   }
 
   // ---- サーバー送信 ----
