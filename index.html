@@ -929,8 +929,67 @@
     }
   }
 
+  // ---- 演出の効果音（音声ファイル不要。Web Audio APIでその場で合成する軽量な方式）----
+  // 初回のタップ（ユーザー操作）でAudioContextを有効化しておく（ブラウザの自動再生制限対策）。
+  var audioCtx = null;
+  function getAudioCtx() {
+    var AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return null;
+    if (!audioCtx) audioCtx = new AC();
+    if (audioCtx.state === "suspended") audioCtx.resume();
+    return audioCtx;
+  }
+  document.addEventListener("pointerdown", function () { getAudioCtx(); }, { once: true });
+
+  function playTone(ctx, freq, startAt, dur, type, peakGain) {
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, startAt);
+    gain.gain.setValueAtTime(0.0001, startAt);
+    gain.gain.exponentialRampToValueAtTime(peakGain, startAt + 0.012);
+    gain.gain.exponentialRampToValueAtTime(0.0001, startAt + dur);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(startAt);
+    osc.stop(startAt + dur + 0.03);
+  }
+
+  // カテゴリごとの音階・音色定義。上位ほど音数・豪華さ（フィナーレの和音）が増える。
+  var FX_SOUND = {
+    gray:    { notes: [523.25], step: 0.1, dur: 0.18, type: "sine", gain: 0.05 },
+    bronze:  { notes: [523.25, 659.25], step: 0.09, dur: 0.18, type: "sine", gain: 0.06 },
+    silver:  { notes: [523.25, 659.25, 783.99], step: 0.08, dur: 0.2, type: "triangle", gain: 0.07 },
+    blue:    { notes: [659.25, 783.99, 1046.50], step: 0.07, dur: 0.22, type: "triangle", gain: 0.08 },
+    purple:  { notes: [523.25, 659.25, 783.99, 1046.50], step: 0.065, dur: 0.22, type: "triangle", gain: 0.08 },
+    red:     { notes: [987.77], step: 0, dur: 0.3, type: "square", gain: 0.08, bass: 164.81 },
+    gold:    { notes: [523.25, 659.25, 783.99, 1046.50, 1318.51], step: 0.06, dur: 0.24, type: "triangle", gain: 0.09, finaleChord: [1046.50, 1318.51, 1567.98] },
+    aurora:  { notes: [659.25, 783.99, 987.77, 1318.51], step: 0.1, dur: 0.4, type: "sine", gain: 0.07, finaleChord: [987.77, 1318.51, 1567.98] },
+    rainbow: { notes: [523.25, 587.33, 659.25, 783.99, 1046.50, 1318.51], step: 0.05, dur: 0.22, type: "triangle", gain: 0.1, finaleChord: [1046.50, 1318.51, 1567.98, 2093.00] }
+  };
+
+  function playFxSound(category) {
+    var ctx = getAudioCtx();
+    if (!ctx) return;
+    var profile = FX_SOUND[category] || FX_SOUND.gray;
+    var t = ctx.currentTime + 0.01;
+    profile.notes.forEach(function (freq, i) {
+      playTone(ctx, freq, t + i * profile.step, profile.dur, profile.type, profile.gain);
+    });
+    if (profile.bass) {
+      playTone(ctx, profile.bass, t, profile.dur + 0.15, "sine", profile.gain * 1.3);
+    }
+    if (profile.finaleChord) {
+      var finaleAt = t + profile.notes.length * profile.step + 0.02;
+      profile.finaleChord.forEach(function (freq) {
+        playTone(ctx, freq, finaleAt, 0.5, profile.type, profile.gain * 0.8);
+      });
+    }
+  }
+
   function playGrandEffect(category) {
     var style = FX_CATEGORY_STYLE[category] || FX_CATEGORY_STYLE.gray;
+    playFxSound(category);
     spawnRing(style.color);
     spawnBurst(style.emojis, style.count);
   }
@@ -1088,7 +1147,7 @@
       document.body.appendChild(piece);
       (function (el) { setTimeout(function () { el.remove(); }, 1500); })(piece);
     }
-    spawnRing("#ffc83c");
+    playGrandEffect("gold");
     var toast = document.createElement("div");
     toast.className = "celebrate-toast";
     toast.textContent = CELEBRATE_MESSAGES[Math.floor(Math.random() * CELEBRATE_MESSAGES.length)];
