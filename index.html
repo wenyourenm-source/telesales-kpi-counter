@@ -67,6 +67,89 @@
   .total-row .label { font-size: 13px; color: var(--muted); }
   .total-row .value { font-size: 15px; font-weight: 700; color: var(--muted); }
 
+  /* ---- 称号・レベル（累計コール数）---- */
+  /* カテゴリごとの配色。rank-card・称号一覧・レベルアップ演出すべてで共通利用する（軽量化のため使い回す）。 */
+  .cat-gray    { --catbg: linear-gradient(135deg,#d9d9dd,#aaadb3); --cattext:#2b2b2e; --catglow: rgba(170,170,180,.45); }
+  .cat-bronze  { --catbg: linear-gradient(135deg,#e7b480,#a9682f); --cattext:#3a2110; --catglow: rgba(185,120,50,.5); }
+  .cat-silver  { --catbg: linear-gradient(135deg,#f4f4f7,#c2c5cc); --cattext:#2b2b2e; --catglow: rgba(200,205,215,.55); }
+  .cat-blue    { --catbg: linear-gradient(135deg,#bfe9ff,#2f9bff); --cattext:#06304a; --catglow: rgba(60,160,255,.55); }
+  .cat-purple  { --catbg: linear-gradient(135deg,#e6d6ff,#8a4dff); --cattext:#2a125e; --catglow: rgba(150,80,255,.55); }
+  .cat-red     { --catbg: linear-gradient(135deg,#ff8a6a,#c0291f); --cattext:#fff; --catglow: rgba(255,70,40,.55); }
+  .cat-gold    { --catbg: linear-gradient(135deg,#fff3c4,#e0a716,#9c6a0a); --cattext:#3d2600; --catglow: rgba(255,195,50,.6); }
+  .cat-aurora  { --catbg: linear-gradient(120deg,#8affc1,#7fd7ff,#caa8ff); --cattext:#123; --catglow: rgba(140,220,255,.6); }
+  .cat-rainbow { --catbg: linear-gradient(90deg,#ff5b5b,#ffd45b,#7bff5b,#5bdcff,#9d6bff,#ff5bd6); --cattext:#fff; --catglow: rgba(255,255,255,.65); }
+
+  .rank-card {
+    margin-top: 8px; padding: 8px 12px; border-radius: var(--radius); cursor: pointer;
+    background: var(--catbg, var(--tile-bg)); border: 1px solid var(--tile-border);
+    box-shadow: var(--tile-shadow), 0 0 14px var(--catglow, transparent);
+    transition: background 0.3s ease;
+  }
+  .rank-card:active { transform: scale(0.98); }
+  .rank-card-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .rank-name { font-size: 14px; font-weight: 800; color: var(--cattext, var(--text)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rank-total { font-size: 11.5px; color: var(--cattext, var(--muted)); opacity: 0.8; white-space: nowrap; }
+  .rank-bar-track {
+    margin-top: 6px; height: 7px; border-radius: 999px; overflow: hidden;
+    background: rgba(128,128,128,0.25);
+  }
+  .rank-bar-fill {
+    height: 100%; border-radius: 999px; width: 0%;
+    background: var(--cattext, var(--accent)); opacity: 0.85; transition: width 0.4s ease;
+  }
+  .rank-remain { margin-top: 4px; font-size: 11px; color: var(--cattext, var(--muted)); opacity: 0.8; }
+
+  /* ---- 称号一覧（タップで開く） ---- */
+  .title-overlay-card { max-height: 78vh; overflow-y: auto; }
+  .title-list { display: flex; flex-direction: column; gap: 7px; margin-bottom: 14px; }
+  .title-row {
+    display: flex; align-items: center; gap: 8px; padding: 10px 12px;
+    border-radius: 12px; border: 2px solid transparent;
+  }
+  .title-row.locked { background: var(--footer-bg); opacity: 0.6; }
+  .title-row.achieved { background: var(--catbg); color: var(--cattext); }
+  .title-row.achieved.equipped { border-color: var(--accent); }
+  .title-row .tr-level { font-size: 10.5px; font-weight: 800; opacity: 0.8; white-space: nowrap; flex-shrink: 0; }
+  .title-row .tr-name {
+    font-size: 13.5px; font-weight: 800; flex: 1; margin: 0 4px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: inherit;
+  }
+  .title-row .tr-threshold { font-size: 10px; opacity: 0.75; white-space: nowrap; flex-shrink: 0; }
+  .title-row .tr-equipped-mark { font-size: 10px; font-weight: 800; flex-shrink: 0; color: var(--accent); }
+
+  /* ---- レベルアップ演出 ---- */
+  .levelup-frame {
+    position: fixed; inset: 0; pointer-events: none; z-index: 150; opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+  .levelup-frame.show {
+    opacity: 1;
+    box-shadow: inset 0 0 0 7px var(--catglow, rgba(255,255,255,0.4)), inset 0 0 120px var(--catglow, rgba(255,255,255,0.25));
+    animation: levelup-pulse 2.5s ease-in-out;
+  }
+  @keyframes levelup-pulse {
+    0%, 100% { filter: brightness(1); }
+    50% { filter: brightness(1.3); }
+  }
+  .levelup-toast {
+    position: fixed; left: 50%; top: 30%; transform: translate(-50%, -50%) scale(0.85);
+    z-index: 151; pointer-events: none; text-align: center;
+    padding: 18px 28px; border-radius: 18px; font-weight: 800;
+    opacity: 0; transition: opacity 0.2s ease, transform 0.2s ease;
+    background: var(--catbg, #222); color: var(--cattext, #fff);
+    box-shadow: 0 12px 36px var(--catglow, rgba(0,0,0,0.4)), 0 0 0 2px rgba(255,255,255,0.25);
+  }
+  .levelup-toast.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  .levelup-toast .lu-label { display: block; font-size: 12px; font-weight: 700; opacity: 0.85; margin-bottom: 2px; letter-spacing: 1px; }
+  .levelup-toast .lu-level { display: block; font-size: 11px; font-weight: 700; opacity: 0.75; margin-bottom: 4px; }
+  .levelup-toast .lu-name { display: block; font-size: 22px; }
+  .levelup-toast.show.cat-aurora .lu-name, .levelup-toast.show.cat-rainbow .lu-name {
+    background-image: var(--catbg); background-size: 300% 100%;
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    animation: cat-shimmer 1.4s linear infinite;
+  }
+  @keyframes cat-shimmer { to { background-position: 300% 0; } }
+
   main {
     flex: 1; overflow-y: auto; padding: 6px 10px 10px;
     -webkit-overflow-scrolling: touch;
@@ -245,6 +328,14 @@
       <span class="label" id="userLabel">&nbsp;</span>
       <span class="value" id="dateLabel">&nbsp;</span>
     </div>
+    <div class="rank-card" id="rankCard">
+      <div class="rank-card-top">
+        <span class="rank-name" id="rankName">―</span>
+        <span class="rank-total" id="rankTotal"></span>
+      </div>
+      <div class="rank-bar-track"><div class="rank-bar-fill" id="rankBarFill"></div></div>
+      <div class="rank-remain" id="rankRemain"></div>
+    </div>
   </header>
 
   <div id="configWarning" class="config-warning hidden">
@@ -287,6 +378,15 @@
   </div>
 </div>
 
+<div class="overlay hidden" id="titleOverlay">
+  <div class="card title-overlay-card">
+    <h2>称号一覧</h2>
+    <p>獲得済みの称号はタップで自由に装着できます。未獲得の称号は「？？？」と表示され、獲得するまで分かりません。</p>
+    <div class="title-list" id="titleList"></div>
+    <button class="primary" id="titleCloseBtn">閉じる</button>
+  </div>
+</div>
+
 <div class="overlay hidden" id="omikujiOverlay">
   <div class="card">
     <div class="omikuji-rank" id="omikujiRank">吉</div>
@@ -297,6 +397,8 @@
 
 <div class="rare-frame" id="rareFrame"></div>
 <div class="rare-toast" id="rareToast"></div>
+<div class="levelup-frame" id="levelupFrame"></div>
+<div class="levelup-toast" id="levelupToast"><span class="lu-label">称号獲得</span><span class="lu-level" id="levelupLevel"></span><span class="lu-name" id="levelupName"></span></div>
 
 <script src="config.js"></script>
 <script>
@@ -333,8 +435,33 @@
     STACKS: "tc_stacks",
     QUEUE: "tc_queue",
     THEME: "tc_theme",
-    OMIKUJI_DAY: "tc_omikuji_day"
+    OMIKUJI_DAY: "tc_omikuji_day",
+    CUM_BASE: "tc_cum_base",
+    CUM_DELTA: "tc_cum_delta",
+    CUM_TIER_SEEN: "tc_cum_tier_seen",
+    CUM_EQUIP: "tc_cum_equip"
   };
+
+  // ---- 称号・レベル（累計コール数、アプリ運用開始からの全期間）----
+  // threshold: 到達に必要な累計コール数。category: 配色（.cat-xxx のクラス名に対応）。
+  var TITLE_TIERS = [
+    { levelLabel: "Lv.01", threshold: 0, name: "電話初心者", category: "gray" },
+    { levelLabel: "Lv.02", threshold: 100, name: "もしもし見習い", category: "gray" },
+    { levelLabel: "Lv.03", threshold: 500, name: "電話と友達", category: "gray" },
+    { levelLabel: "Lv.04", threshold: 1000, name: "架電戦士", category: "bronze" },
+    { levelLabel: "Lv.05", threshold: 3000, name: "コールハンター", category: "bronze" },
+    { levelLabel: "Lv.06", threshold: 5000, name: "架電職人", category: "silver" },
+    { levelLabel: "Lv.07", threshold: 10000, name: "人間コールセンター", category: "blue" },
+    { levelLabel: "Lv.08", threshold: 15000, name: "電話の申し子", category: "blue" },
+    { levelLabel: "Lv.09", threshold: 20000, name: "CALL MASTER", category: "purple" },
+    { levelLabel: "Lv.10", threshold: 30000, name: "架電の鬼", category: "red" },
+    { levelLabel: "Lv.11", threshold: 40000, name: "電話界の支配者", category: "red" },
+    { levelLabel: "Lv.12", threshold: 50000, name: "黄金の架電王", category: "gold" },
+    { levelLabel: "Lv.13", threshold: 75000, name: "生きる伝説", category: "gold" },
+    { levelLabel: "Lv.14", threshold: 100000, name: "架電神 ― GOD ―", category: "gold" },
+    { levelLabel: "Lv.15", threshold: 150000, name: "神を超えし者", category: "aurora" },
+    { levelLabel: "Lv.MAX", threshold: 200000, name: "重要無形架電文化財", category: "rainbow" }
+  ];
 
   // ---- デザイン（テーマ）一覧。色・角丸・フォントをCSSカスタムプロパティとして適用する。 ----
   var BASE_FONT = '-apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, system-ui, sans-serif';
@@ -428,7 +555,11 @@
     stacks: loadJSON(LS.STACKS, emptyStacks()),
     queue: loadJSON(LS.QUEUE, []),
     mode: "add",
-    theme: localStorage.getItem(LS.THEME) || "standard"
+    theme: localStorage.getItem(LS.THEME) || "standard",
+    cumBase: parseInt(localStorage.getItem(LS.CUM_BASE), 10) || 0,
+    cumDelta: parseInt(localStorage.getItem(LS.CUM_DELTA), 10) || 0,
+    cumTierSeen: parseInt(localStorage.getItem(LS.CUM_TIER_SEEN), 10) || 0,
+    equipIdx: localStorage.getItem(LS.CUM_EQUIP) !== null ? parseInt(localStorage.getItem(LS.CUM_EQUIP), 10) : -1
   };
 
   function persistCounters() {
@@ -436,6 +567,13 @@
     saveJSON(LS.COUNTS, state.counts);
     saveJSON(LS.STACKS, state.stacks);
     saveJSON(LS.QUEUE, state.queue);
+  }
+
+  function persistCumulative() {
+    localStorage.setItem(LS.CUM_BASE, String(state.cumBase));
+    localStorage.setItem(LS.CUM_DELTA, String(state.cumDelta));
+    localStorage.setItem(LS.CUM_TIER_SEEN, String(state.cumTierSeen));
+    localStorage.setItem(LS.CUM_EQUIP, String(state.equipIdx));
   }
 
   function ensureDayRollover() {
@@ -474,6 +612,18 @@
   var omikujiCloseBtn = document.getElementById("omikujiCloseBtn");
   var rareFrame = document.getElementById("rareFrame");
   var rareToast = document.getElementById("rareToast");
+  var rankCard = document.getElementById("rankCard");
+  var rankName = document.getElementById("rankName");
+  var rankTotal = document.getElementById("rankTotal");
+  var rankBarFill = document.getElementById("rankBarFill");
+  var rankRemain = document.getElementById("rankRemain");
+  var titleOverlay = document.getElementById("titleOverlay");
+  var titleList = document.getElementById("titleList");
+  var titleCloseBtn = document.getElementById("titleCloseBtn");
+  var levelupFrame = document.getElementById("levelupFrame");
+  var levelupToast = document.getElementById("levelupToast");
+  var levelupLevel = document.getElementById("levelupLevel");
+  var levelupName = document.getElementById("levelupName");
 
   function buildIndustryOptions() {
     industrySelect.innerHTML = "";
@@ -566,6 +716,7 @@
     renderCounts();
     renderMode();
     renderStatus();
+    renderRank();
   }
 
   /**
@@ -586,6 +737,7 @@
         delta: 1,
         occurredAt: ctx.occurredAt
       });
+      if (metricKey === "call") bumpCumulative(1);
     } else {
       if ((state.counts[metricKey] || 0) <= 0) return; // 0未満にはしない
       var popped = state.stacks[metricKey].pop();
@@ -600,7 +752,149 @@
         delta: -1,
         occurredAt: useOccurredAt
       });
+      if (metricKey === "call") bumpCumulative(-1);
     }
+  }
+
+  // ---- 称号・レベル（累計コール数）のロジック ----
+  // 累計値 = サーバーから最後に取得できた確定値（cumBase）＋ その後ローカルで加減算した分（cumDelta）。
+  // タップのたびにサーバーへ問い合わせる必要がないため、カウント操作そのものの速度には影響しない。
+  function cumulativeTotal() {
+    return Math.max(0, state.cumBase + state.cumDelta);
+  }
+
+  function tierForTotal(total) {
+    var tier = TITLE_TIERS[0];
+    for (var i = 0; i < TITLE_TIERS.length; i++) {
+      if (total >= TITLE_TIERS[i].threshold) tier = TITLE_TIERS[i];
+    }
+    return tier;
+  }
+
+  function tierIndex(tier) {
+    return TITLE_TIERS.indexOf(tier);
+  }
+
+  // 実際に到達済みの最高レベル（称号の解放状況の判定に使う。装着中の表示とは独立）。
+  function achievedMaxIdx() {
+    return tierIndex(tierForTotal(cumulativeTotal()));
+  }
+
+  // 画面バッジに表示するレベル。装着指定（equipIdx）が解放済み範囲内ならそれを優先し、
+  // 未指定（-1）または範囲外の場合は常に「現在の最高到達レベル」を自動表示する。
+  function displayTierIdx() {
+    var maxIdx = achievedMaxIdx();
+    if (state.equipIdx >= 0 && state.equipIdx <= maxIdx) return state.equipIdx;
+    return maxIdx;
+  }
+
+  function bumpCumulative(delta) {
+    var beforeIdx = achievedMaxIdx();
+    state.cumDelta += delta;
+    persistCumulative();
+    renderRank();
+    var afterIdx = achievedMaxIdx();
+    if (afterIdx > Math.max(beforeIdx, state.cumTierSeen)) {
+      state.cumTierSeen = afterIdx;
+      persistCumulative();
+      if (afterIdx > 0) triggerLevelUp(TITLE_TIERS[afterIdx]);
+    }
+  }
+
+  function renderRank() {
+    var total = cumulativeTotal();
+    var maxIdx = achievedMaxIdx();
+    var shownIdx = displayTierIdx();
+    var shownTier = TITLE_TIERS[shownIdx];
+    var next = TITLE_TIERS[maxIdx + 1];
+
+    rankCard.className = "rank-card cat-" + shownTier.category;
+    rankName.textContent = shownTier.levelLabel + " " + shownTier.name;
+    rankTotal.textContent = "累計コール " + total.toLocaleString() + "件";
+
+    if (next) {
+      var prevThreshold = TITLE_TIERS[maxIdx].threshold;
+      var span = next.threshold - prevThreshold;
+      var progressed = total - prevThreshold;
+      var pct = span > 0 ? Math.max(0, Math.min(100, (progressed / span) * 100)) : 100;
+      rankBarFill.style.width = pct + "%";
+      rankRemain.textContent = "次の称号「？？？」まであと " + (next.threshold - total).toLocaleString() + "件";
+    } else {
+      rankBarFill.style.width = "100%";
+      rankRemain.textContent = "最高位の称号に到達しました";
+    }
+  }
+
+  function renderTitleList() {
+    var maxIdx = achievedMaxIdx();
+    var shownIdx = displayTierIdx();
+    titleList.innerHTML = "";
+    TITLE_TIERS.forEach(function (tier, idx) {
+      var achieved = idx <= maxIdx;
+      var row = document.createElement("button");
+      row.type = "button";
+      row.className = "title-row " + (achieved ? "cat-" + tier.category + " achieved" : "locked") +
+        (achieved && idx === shownIdx ? " equipped" : "");
+      row.innerHTML =
+        '<span class="tr-level">' + tier.levelLabel + '</span>' +
+        '<span class="tr-name">' + (achieved ? tier.name : "？？？") + '</span>' +
+        '<span class="tr-threshold">' + tier.threshold.toLocaleString() + '件' + (achieved ? '' : 'で解放') + '</span>' +
+        (achieved && idx === shownIdx ? '<span class="tr-equipped-mark">装着中</span>' : '');
+      if (achieved) {
+        row.addEventListener("click", function () {
+          state.equipIdx = idx;
+          persistCumulative();
+          renderRank();
+          renderTitleList();
+        });
+      } else {
+        row.disabled = true;
+      }
+      titleList.appendChild(row);
+    });
+  }
+
+  var levelupTimer = null;
+  function triggerLevelUp(tier) {
+    if (levelupTimer) {
+      clearTimeout(levelupTimer);
+      levelupFrame.className = "levelup-frame";
+      levelupToast.className = "levelup-toast";
+      void levelupFrame.offsetWidth;
+    }
+    levelupLevel.textContent = tier.levelLabel;
+    levelupName.textContent = tier.name;
+    levelupFrame.className = "levelup-frame cat-" + tier.category + " show";
+    levelupToast.className = "levelup-toast cat-" + tier.category + " show";
+    levelupTimer = setTimeout(function () {
+      levelupFrame.className = "levelup-frame";
+      levelupToast.className = "levelup-toast";
+      levelupTimer = null;
+    }, 2500);
+  }
+
+  /**
+   * 累計コール数をサーバー（累計KPIシート）から取得して基準値を更新する。
+   * タップ操作ではなく、起動時・フォアグラウンド復帰時にだけ呼ぶ（fetchIndustriesと同じ頻度）。
+   * 表示が後退しないよう、サーバー値とローカル確定値の大きい方を基準に据え直す。
+   */
+  function fetchMyStats() {
+    if (!endpointReady() || !state.name) return;
+    fetch(window.APPS_SCRIPT_URL + "?action=mystats&name=" + encodeURIComponent(state.name), { method: "GET" })
+      .then(function (res) { return res.json(); })
+      .then(function (json) {
+        if (!json || !json.ok || typeof json.totalCalls !== "number") return;
+        var displayed = cumulativeTotal();
+        var newBase = Math.max(json.totalCalls, displayed);
+        state.cumDelta = newBase - json.totalCalls;
+        state.cumBase = json.totalCalls;
+        // 初回取得時など、既にこのタップより前に到達済みの称号は演出なしで静かに反映する
+        var knownTier = tierIndex(tierForTotal(newBase));
+        if (knownTier > state.cumTierSeen) state.cumTierSeen = knownTier;
+        persistCumulative();
+        renderRank();
+      })
+      .catch(function () {});
   }
 
   function onTileTap(metricKey) {
@@ -838,6 +1132,12 @@
     themeOverlay.classList.remove("hidden");
   });
   themeCloseBtn.addEventListener("click", function () { themeOverlay.classList.add("hidden"); });
+
+  rankCard.addEventListener("click", function () {
+    renderTitleList();
+    titleOverlay.classList.remove("hidden");
+  });
+  titleCloseBtn.addEventListener("click", function () { titleOverlay.classList.add("hidden"); });
   omikujiCloseBtn.addEventListener("click", function () { omikujiOverlay.classList.add("hidden"); });
 
   window.addEventListener("online", function () { renderStatus(); scheduleFlush(); });
@@ -847,6 +1147,7 @@
       ensureDayRollover();
       scheduleFlush();
       fetchIndustries();
+      fetchMyStats();
     }
   });
   setInterval(function () { ensureDayRollover(); scheduleFlush(); }, 15000);
@@ -860,6 +1161,7 @@
     nameOverlay.classList.add("hidden");
     renderHeader();
     maybeShowOmikuji();
+    fetchMyStats();
   }
   nameSaveBtn.addEventListener("click", saveName);
   nameInput.addEventListener("keydown", function (e) { if (e.key === "Enter") saveName(); });
@@ -883,6 +1185,7 @@
 
     if (state.queue.length) scheduleFlush();
     fetchIndustries();
+    fetchMyStats();
 
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("sw.js").catch(function () {});
